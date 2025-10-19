@@ -62,8 +62,8 @@
           y: profitLossData.map(d => d.net_realized_profit_loss_lth),
           type: 'scatter',
           mode: 'lines',
-          name: 'LTH Net Realised Profit/Loss',
-          line: { color: '#00FF88', width: 1.5 },
+          name: 'Net Realised Profit/Loss (LTH)',
+          line: { color: '#00BFFF', width: 1.5 },
           hovertemplate: '<b>Net Realised P/L (LTH):</b> $%{y:,.0f}<extra></extra>'
         }
       ];
@@ -71,10 +71,10 @@
 
     Promise.all([
       fetch("/api/derived/price.js").then(r => r.json()),
-      fetch("/api/net_realized_profit_loss.js").then(r => r.json())
-    ]).then(([priceResult, profitLossResult]) => {
+      fetch("/LTH-Net-Realised-Profit-Loss/api/net_realized_profit_loss.js").then(r => r.json())
+    ])
+    .then(([priceResult, profitLossResult]) => {
       const cutoffDate = new Date('2013-02-01');
-
       const priceData = priceResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const profitLossData = profitLossResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const lastDate = priceData[priceData.length - 1].date;
@@ -96,7 +96,6 @@
         },
         yaxis: {
           title: 'Value (USD)',
-          type: 'log',
           tickprefix: '$',
           showline: false
         },
@@ -104,27 +103,9 @@
       };
 
       const traces = buildTraces(priceData, profitLossData);
-      Plotly.newPlot('chart', traces, layout, { responsive: true }).then(() => {
-        const logo = document.getElementById('logo-front');
-        const downloadBtn = document.querySelector('.modebar-btn[data-title="Download plot as a png"]');
-
-        if (downloadBtn) {
-          downloadBtn.addEventListener('click', () => {
-            logo.style.display = 'none';
-            setTimeout(() => {
-              Plotly.downloadImage('chart', {
-                format: 'png',
-                width: 1600,
-                height: 900,
-                filename: 'OCM-LTH-Net-Realised-Profit-Loss'
-              }).then(() => {
-                logo.style.display = '';
-              });
-            }, 300);
-          });
-        }
-      });
-    }).catch(err => {
+      Plotly.newPlot('chart', traces, layout, { responsive: true });
+    })
+    .catch(err => {
       console.error(err);
       document.getElementById('chart').innerHTML =
         `<p style="color:red; text-align:center;">Failed to load data.</p>`;
