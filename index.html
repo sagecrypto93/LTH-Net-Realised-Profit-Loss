@@ -59,10 +59,9 @@
     }
 
     function buildTraces(priceData, profitLossData) {
-      // Smooth the Profit/Loss data
       const smoothedProfitLoss = smooth(
         profitLossData.map(d => d.net_realized_profit_loss_lth),
-        30 // <-- Adjust this number for more or less smoothing
+        30
       );
 
       return [
@@ -73,7 +72,8 @@
           mode: 'lines',
           name: 'BTC Price',
           line: { color: 'white', width: 1 },
-          hovertemplate: '<b>Price:</b> $%{y:,.0f}<extra></extra>'
+          hovertemplate: '<b>Price:</b> $%{y:,.0f}<extra></extra>',
+          yaxis: 'y1'  // Assign to primary (left) y-axis
         },
         {
           x: profitLossData.map(d => d.date),
@@ -82,7 +82,8 @@
           mode: 'lines',
           name: 'Net Realised Profit/Loss (LTH, Smoothed)',
           line: { color: '#00BFFF', width: 2 },
-          hovertemplate: '<b>Smoothed Net Realised P/L (LTH):</b> $%{y:,.0f}<extra></extra>'
+          hovertemplate: '<b>Smoothed Net Realised P/L (LTH):</b> $%{y:,.0f}<extra></extra>',
+          yaxis: 'y2'  // Assign to secondary (right) y-axis
         }
       ];
     }
@@ -113,9 +114,17 @@
           hoverformat: '%d %b %Y'
         },
         yaxis: {
-          title: 'Value (USD)',
+          title: 'BTC Price (USD)',
           tickprefix: '$',
-          showline: false
+          type: 'log',
+          showline: false,
+          side: 'left'
+        },
+        yaxis2: {
+          title: 'Net Realised P/L (USD)',
+          overlaying: 'y',
+          side: 'right',
+          showgrid: false
         },
         legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.1 }
       };
