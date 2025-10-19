@@ -37,16 +37,88 @@
       height: 100%;
       z-index: 1;
     }
+    #controls {
+      max-width: 900px;
+      margin: 1em auto;
+      color: white;
+      display: flex;
+      justify-content: center;
+      padding: 0 10px;
+    }
+    select {
+      background: #18181D;
+      color: white;
+      border: 1px solid #444;
+      padding: 5px;
+    }
   </style>
 </head>
 <body>
+  <div id="controls">
+    <label for="smaSelect" style="margin-right: 8px;">SMA:</label>
+    <select id="smaSelect" style="margin-right: 16px;">
+      <option value="none">None</option>
+      <option value="7">7-day</option>
+      <option value="30">30-day</option>
+      <option value="50">50-day</option>
+      <option value="100">100-day</option>
+      <option value="200">200-day</option>
+      <option value="365" selected>365-day</option>
+    </select>
+    
+    <label for="emaSelect" style="margin-right: 8px;">EMA:</label>
+    <select id="emaSelect">
+      <option value="none" selected>None</option>
+      <option value="7">7-day EMA</option>
+      <option value="30">30-day EMA</option>
+      <option value="50">50-day EMA</option>
+      <option value="100">100-day EMA</option>
+      <option value="200">200-day EMA</option>
+      <option value="365">365-day EMA</option>
+    </select>
+  </div>
+
   <div id="chart-container">
     <img id="logo-front" src="logo.png" alt="Logo Overlay" />
     <div id="chart"></div>
   </div>
 
   <script>
-    // --- Simple Moving Average Function ---
+    function calculateSMA(data, period) {
+      const sma = [];
+      for (let i = 0; i < data.length; i++) {
+        if (i < period - 1) {
+          sma.push(null);
+        } else {
+          const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+          sma.push(sum / period);
+        }
+      }
+      return sma;
+    }
+
+    function calculateEMA(data, period) {
+      const ema = [];
+      let k = 2 / (period + 1);
+      let prevEma;
+
+      for (let i = 0; i < data.length; i++) {
+        const val = data[i];
+        if (i < period - 1) {
+          ema.push(null);
+        } else if (i === period - 1) {
+          const sma = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
+          ema.push(sma);
+          prevEma = sma;
+        } else {
+          const currentEma = val * k + prevEma * (1 - k);
+          ema.push(currentEma);
+          prevEma = currentEma;
+        }
+      }
+      return ema;
+    }
+
     function smooth(data, windowSize) {
       const result = [];
       for (let i = 0; i < data.length; i++) {
@@ -58,34 +130,66 @@
       return result;
     }
 
-    function buildTraces(priceData, profitLossData) {
-      const smoothedProfitLoss = smooth(
-        profitLossData.map(d => d.net_realized_profit_loss_lth),
-        30
-      );
+    function buildTraces(smaPeriod, emaPeriod, profitLossData, priceData) {
+      const traces = [];
+      const profitValues = profitLossData.map(d => d.net_realized_profit_loss_lth);
+      const smoothedProfit = smooth(profitValues, 30);
 
-      return [
-        {
-          x: priceData.map(d => d.date),
-          y: priceData.map(d => d.price),
-          type: 'scatter',
-          mode: 'lines',
-          name: 'BTC Price',
-          line: { color: 'white', width: 1 },
-          hovertemplate: '<b>Price:</b> $%{y:,.0f}<extra></extra>',
-          yaxis: 'y1'  // Assign to primary (left) y-axis
-        },
-        {
+      // BTC Price (upper pane)
+      traces.push({
+        x: priceData.map(d => d.date),
+        y: priceData.map(d => d.price),
+        yaxis: 'y1',
+        type: 'scatter',
+        mode: 'lines',
+        name: 'BTC Price',
+        line: { color: 'white', width: 1 },
+        hovertemplate: '<b>Price:</b> $%{y:,.0f}<extra></extra>'
+      });
+
+      // Net Realised Profit/Loss (lower pane)
+      traces.push({
+        x: profitLossData.map(d => d.date),
+        y: smoothedProfit,
+        yaxis: 'y2',
+        type: 'scatter',
+        mode: 'lines',
+        name: 'LTH Net Realised P/L (Smoothed)',
+        line: { color: '#00BFFF', width: 2 },
+        hovertemplate: '<b>LTH Net Realised P/L:</b> $%{y:,.0f}<extra></extra>'
+      });
+
+      // SMA
+      if (smaPeriod !== 'none') {
+        const sma = calculateSMA(profitValues, parseInt(smaPeriod));
+        traces.push({
           x: profitLossData.map(d => d.date),
-          y: smoothedProfitLoss,
+          y: sma,
+          yaxis: 'y2',
           type: 'scatter',
           mode: 'lines',
-          name: 'Net Realised Profit/Loss (LTH, Smoothed)',
-          line: { color: '#00BFFF', width: 2 },
-          hovertemplate: '<b>Smoothed Net Realised P/L (LTH):</b> $%{y:,.0f}<extra></extra>',
-          yaxis: 'y2'  // Assign to secondary (right) y-axis
-        }
-      ];
+          name: `${smaPeriod}-day SMA`,
+          line: { color: 'white', width: 1.5, dash: 'dot' },
+          hovertemplate: '<b>SMA:</b> $%{y:,.0f}<extra></extra>'
+        });
+      }
+
+      // EMA
+      if (emaPeriod !== 'none') {
+        const ema = calculateEMA(profitValues, parseInt(emaPeriod));
+        traces.push({
+          x: profitLossData.map(d => d.date),
+          y: ema,
+          yaxis: 'y2',
+          type: 'scatter',
+          mode: 'lines',
+          name: `${emaPeriod}-day EMA`,
+          line: { color: '#00ff99', width: 1.5, dash: 'dashdot' },
+          hovertemplate: '<b>EMA:</b> $%{y:,.0f}<extra></extra>'
+        });
+      }
+
+      return traces;
     }
 
     Promise.all([
@@ -93,49 +197,67 @@
       fetch("/api/net_realized_profit_loss.js").then(r => r.json())
     ])
     .then(([priceResult, profitLossResult]) => {
-      const cutoffDate = new Date('2013-04-01');
+      const cutoffDate = new Date('2013-02-01');
       const priceData = priceResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const profitLossData = profitLossResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const lastDate = priceData[priceData.length - 1].date;
 
       const layout = {
+        grid: { rows: 2, columns: 1, pattern: 'independent' },
         paper_bgcolor: '#18181D',
         plot_bgcolor: '#18181D',
         font: { color: 'white' },
         margin: { t: 20, b: 5 },
         hovermode: 'x unified',
         xaxis: {
+          domain: [0, 1],
           type: 'date',
-          range: ['2013-04-01', lastDate],
           showspikes: true,
           spikemode: 'across',
           spikecolor: 'white',
           spikethickness: 1,
-          hoverformat: '%d %b %Y'
+          range: ['2013-02-01', lastDate],
+          anchor: 'y1',
+          hoverformat: '%d %b %Y',
+          showline: true,
+          ticks: 'outside',
+          ticklen: 6
         },
         yaxis: {
-          title: 'BTC Price (USD)',
-          tickprefix: '$',
+          domain: [0.5, 1],
+          title: 'Price (USD)',
           type: 'log',
-          showline: false,
-          side: 'left'
+          tickprefix: '$',
+          showline: false
         },
         yaxis2: {
-          title: 'Net Realised P/L (USD)',
-          overlaying: 'y',
-          side: 'right',
-          showgrid: false
+          domain: [0, 0.5],
+          title: 'LTH Net Realised P/L',
+          tickprefix: '$',
+          showline: false
         },
         legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.1 }
       };
 
-      const traces = buildTraces(priceData, profitLossData);
+      const traces = buildTraces("365", "none", profitLossData, priceData);
       Plotly.newPlot('chart', traces, layout, { responsive: true });
+
+      const smaSelect = document.getElementById("smaSelect");
+      const emaSelect = document.getElementById("emaSelect");
+
+      function updateChart() {
+        const smaValue = smaSelect.value;
+        const emaValue = emaSelect.value;
+        const newTraces = buildTraces(smaValue, emaValue, profitLossData, priceData);
+        Plotly.react('chart', newTraces, layout, { responsive: true });
+      }
+
+      smaSelect.addEventListener("change", updateChart);
+      emaSelect.addEventListener("change", updateChart);
     })
     .catch(err => {
       console.error(err);
-      document.getElementById('chart').innerHTML =
-        `<p style="color:red; text-align:center;">Failed to load data.</p>`;
+      document.getElementById('chart').innerHTML = `<p style="color:red; text-align:center;">Failed to load data.</p>`;
     });
   </script>
 </body>
