@@ -46,7 +46,25 @@
   </div>
 
   <script>
+    // --- Simple Moving Average Function ---
+    function smooth(data, windowSize) {
+      const result = [];
+      for (let i = 0; i < data.length; i++) {
+        const start = Math.max(0, i - windowSize + 1);
+        const subset = data.slice(start, i + 1);
+        const avg = subset.reduce((a, b) => a + b, 0) / subset.length;
+        result.push(avg);
+      }
+      return result;
+    }
+
     function buildTraces(priceData, profitLossData) {
+      // Smooth the Profit/Loss data
+      const smoothedProfitLoss = smooth(
+        profitLossData.map(d => d.net_realized_profit_loss_lth),
+        30 // <-- Adjust this number for more or less smoothing
+      );
+
       return [
         {
           x: priceData.map(d => d.date),
@@ -59,19 +77,19 @@
         },
         {
           x: profitLossData.map(d => d.date),
-          y: profitLossData.map(d => d.net_realized_profit_loss_lth),
+          y: smoothedProfitLoss,
           type: 'scatter',
           mode: 'lines',
-          name: 'Net Realised Profit/Loss (LTH)',
-          line: { color: '#00BFFF', width: 1.5 },
-          hovertemplate: '<b>Net Realised P/L (LTH):</b> $%{y:,.0f}<extra></extra>'
+          name: 'Net Realised Profit/Loss (LTH, Smoothed)',
+          line: { color: '#00BFFF', width: 2 },
+          hovertemplate: '<b>Smoothed Net Realised P/L (LTH):</b> $%{y:,.0f}<extra></extra>'
         }
       ];
     }
 
     Promise.all([
       fetch("/api/derived/price.js").then(r => r.json()),
-      fetch("/api/net_realized_profit_loss.js").then(r => r.json())
+      fetch("/LTH-Net-Realised-Profit-Loss/api/net_realized_profit_loss.js").then(r => r.json())
     ])
     .then(([priceResult, profitLossResult]) => {
       const cutoffDate = new Date('2013-02-01');
