@@ -202,44 +202,50 @@
       const profitLossData = profitLossResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const lastDate = priceData[priceData.length - 1].date;
 
-      const layout = {
-        grid: { rows: 2, columns: 1, pattern: 'independent' },
-        paper_bgcolor: '#18181D',
-        plot_bgcolor: '#18181D',
-        font: { color: 'white' },
-        margin: { t: 20, b: 5 },
-        hovermode: 'x unified',
-        xaxis: {
-          domain: [0, 1],
-          type: 'date',
-          showspikes: true,
-          spikemode: 'across',
-          spikecolor: 'white',
-          spikethickness: 1,
-          range: ['2013-02-01', lastDate],
-          anchor: 'y1',
-          hoverformat: '%d %b %Y',
-          showline: true,
-          ticks: 'outside',
-          ticklen: 6
-        },
-        yaxis: {
-          domain: [0.5, 1],
-          title: 'Price (USD)',
-          type: 'log',
-          tickprefix: '$',
-          showline: false,
-          fixedrange: false
-        },
-        yaxis2: {
-          domain: [0, 0.5],
-          title: 'LTH Net Realised P/L',
-          tickprefix: '$',
-          showline: false,
-      fixedrange: false
-        },
-        legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.1 }
-      };
+     const layout = {
+  grid: { rows: 2, columns: 1, pattern: 'independent' },
+  paper_bgcolor: '#18181D',
+  plot_bgcolor: '#18181D',
+  font: { color: 'white' },
+  margin: { t: 20, b: 5 },
+  hovermode: 'x unified',
+  
+  // Enable box zoom for both axes
+  dragmode: 'zoom', // allows dragging a box to zoom
+
+  xaxis: {
+    domain: [0, 1],
+    type: 'date',
+    showspikes: true,
+    spikemode: 'across',
+    spikecolor: 'white',
+    spikethickness: 1,
+    range: ['2013-02-01', lastDate],
+    anchor: 'y1',
+    hoverformat: '%d %b %Y',
+    showline: true,
+    ticks: 'outside',
+    ticklen: 6
+  },
+  yaxis: {
+    domain: [0.5, 1],
+    title: 'Price (USD)',
+    type: 'log',
+    tickprefix: '$',
+    showline: false,
+    fixedrange: false // allows vertical pan
+  },
+  yaxis2: {
+    domain: [0, 0.5],
+    title: 'LTH Net Realised P/L',
+    tickprefix: '$',
+    showline: false,
+    fixedrange: false, // allows vertical pan
+    overlaying: 'y', // optional if you want synchronized vertical pan
+    side: 'right'
+  },
+  legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.1 }
+};
 
       const traces = buildTraces("365", "none", profitLossData, priceData);
       Plotly.newPlot('chart', traces, layout, { responsive: true });
