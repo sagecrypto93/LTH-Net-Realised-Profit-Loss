@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>OCM LTH Realized Price</title> 
+  <title>OCM LTH Net Realised Profit/Loss</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <style>
     body {
@@ -46,7 +46,7 @@
   </div>
 
   <script>
-    function buildTraces(priceData, realisedData) {
+    function buildTraces(priceData, profitLossData) {
       return [
         {
           x: priceData.map(d => d.date),
@@ -57,26 +57,26 @@
           line: { color: 'white', width: 1 },
           hovertemplate: '<b>Price:</b> $%{y:,.0f}<extra></extra>'
         },
-       {
-  x: realisedData.map(d => d.date),
-  y: realisedData.map(d => d.realized_price_lth),  // ❌ <-- 
-  type: 'scatter',
-  mode: 'lines',
-  name: 'Realized Price (LTH)', // ❌ <-- 
-  line: { color: '#00BFFF', width: 1.5 }, // ❌ <--
-  hovertemplate: '<b>Realized Price (LTH):</b> $%{y:,.0f}<extra></extra>' // ❌ <--
-}
+        {
+          x: profitLossData.map(d => d.date),
+          y: profitLossData.map(d => d.net_realized_profit_loss_lth),
+          type: 'scatter',
+          mode: 'lines',
+          name: 'LTH Net Realised Profit/Loss',
+          line: { color: '#00FF88', width: 1.5 },
+          hovertemplate: '<b>Net Realised P/L (LTH):</b> $%{y:,.0f}<extra></extra>'
+        }
       ];
     }
 
     Promise.all([
       fetch("/api/derived/price.js").then(r => r.json()),
-      fetch("/api/realizedprice.js").then(r => r.json()) // ❌ <--
-    ]).then(([priceResult, realisedResult]) => {
+      fetch("/api/net_realized_profit_loss.js").then(r => r.json())
+    ]).then(([priceResult, profitLossResult]) => {
       const cutoffDate = new Date('2013-02-01');
 
       const priceData = priceResult.data.filter(d => new Date(d.date) >= cutoffDate);
-      const realisedData = realisedResult.data.filter(d => new Date(d.date) >= cutoffDate);
+      const profitLossData = profitLossResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const lastDate = priceData[priceData.length - 1].date;
 
       const layout = {
@@ -85,17 +85,17 @@
         font: { color: 'white' },
         margin: { t: 20, b: 5 },
         hovermode: 'x unified',
-       xaxis: {
-  type: 'date',
-  range: ['2013-02-01', lastDate],
-  showspikes: true,
-  spikemode: 'across',
-  spikecolor: 'white',
-  spikethickness: 1,
-  hoverformat: '%d %b %Y'  // <-- this formats the hover to "15 Apr 2023"
-},
+        xaxis: {
+          type: 'date',
+          range: ['2013-02-01', lastDate],
+          showspikes: true,
+          spikemode: 'across',
+          spikecolor: 'white',
+          spikethickness: 1,
+          hoverformat: '%d %b %Y'
+        },
         yaxis: {
-          title: 'Price (USD)',
+          title: 'Value (USD)',
           type: 'log',
           tickprefix: '$',
           showline: false
@@ -103,7 +103,7 @@
         legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.1 }
       };
 
-      const traces = buildTraces(priceData, realisedData);
+      const traces = buildTraces(priceData, profitLossData);
       Plotly.newPlot('chart', traces, layout, { responsive: true }).then(() => {
         const logo = document.getElementById('logo-front');
         const downloadBtn = document.querySelector('.modebar-btn[data-title="Download plot as a png"]');
@@ -116,7 +116,7 @@
                 format: 'png',
                 width: 1600,
                 height: 900,
-                filename: 'OCM-Price-Realised' // ❌ <--
+                filename: 'OCM-LTH-Net-Realised-Profit-Loss'
               }).then(() => {
                 logo.style.display = '';
               });
