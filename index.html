@@ -93,7 +93,7 @@
       fetch("/api/net_realized_profit_loss.js").then(r => r.json())
     ])
     .then(([priceResult, profitLossResult]) => {
-      const cutoffDate = new Date('2013-02-01');
+      const cutoffDate = new Date('2013-04-01');
       const priceData = priceResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const profitLossData = profitLossResult.data.filter(d => new Date(d.date) >= cutoffDate);
       const lastDate = priceData[priceData.length - 1].date;
@@ -106,7 +106,7 @@
         hovermode: 'x unified',
         xaxis: {
           type: 'date',
-          range: ['2013-02-01', lastDate],
+          range: ['2013-04-01', lastDate],
           showspikes: true,
           spikemode: 'across',
           spikecolor: 'white',
