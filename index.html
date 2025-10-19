@@ -71,7 +71,7 @@
 
     Promise.all([
       fetch("/api/derived/price.js").then(r => r.json()),
-      fetch("/LTH-Net-Realised-Profit-Loss/api/net_realized_profit_loss.js").then(r => r.json())
+      fetch("/api/net_realized_profit_loss.js").then(r => r.json())
     ])
     .then(([priceResult, profitLossResult]) => {
       const cutoffDate = new Date('2013-02-01');
