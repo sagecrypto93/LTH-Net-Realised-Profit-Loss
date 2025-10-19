@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   const token = process.env.RESEARCHBITCOIN_TOKEN; 
-  const endpoint = `https://api.researchbitcoin.net/v1/realizedprice/realized_price_lth?token=${token}&date_field=2011-01-01&output_format=json`;
+  const endpoint = `https://api.researchbitcoin.net/v1/net_realized_profit_loss/net_realized_profit_loss_lth?token=${token}&date_field=2011-01-01&output_format=json`;
   //❌ Change title to CATEGORY name .js
   //❌ Change NAME to CATEGORY name and 2NDNAME to data_field name
 
